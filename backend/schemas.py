@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional, Union
 
+
 class ParseRequest(BaseModel):
     data: Union[str, List[str]] = Field(...)
 
@@ -21,6 +22,7 @@ class ParseRequest(BaseModel):
 
 class ParsedItemResponse(BaseModel):
     """Response model for parsed items."""
+
     product_name: Optional[str] = None
     quantity: Optional[float] = None
     unit: Optional[str] = None
@@ -33,6 +35,7 @@ class ParsedItemResponse(BaseModel):
 
 class ParseResponse(BaseModel):
     """Response model for parse endpoint."""
+
     success: bool
     results: List[ParsedItemResponse]
     items_processed: int
@@ -43,7 +46,7 @@ class ParseResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Error response model."""
+
     error: str
     detail: Optional[str] = None
     timestamp: str
-

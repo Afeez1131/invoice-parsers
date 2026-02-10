@@ -1,6 +1,7 @@
 """
 Invoice Parser with improved line handling
 """
+
 import re
 from typing import List, Dict, Optional, Tuple
 from dataclasses import dataclass, asdict, field
@@ -9,6 +10,7 @@ from dataclasses import dataclass, asdict, field
 @dataclass
 class ParsedItem:
     """Represents a parsed invoice item."""
+
     product_name: Optional[str] = None
     quantity: Optional[float] = None
     unit: Optional[str] = None
@@ -26,24 +28,70 @@ class InvoiceParser:
 
     # Unit mappings
     UNIT_MAPPINGS = {
-        'kg': 'kg', 'kgs': 'kg', 'kilogram': 'kg', 'kilograms': 'kg', 'kilo': 'kg', 'k': 'kg',
-        'g': 'g', 'gm': 'g', 'gram': 'g', 'grams': 'g', 'gr': 'g',
-        'l': 'l', 'ltr': 'l', 'litre': 'l', 'litres': 'l', 'liter': 'l', 'lt': 'l',
-        'ml': 'ml', 'milliliter': 'ml', 'millilitre': 'ml', 'mil': 'ml',
-        'pcs': 'pcs', 'pc': 'pcs', 'piece': 'pcs', 'pieces': 'pcs', 'p': 'pcs',
-        'bottle': 'bottles', 'bottles': 'bottles', 'btl': 'bottles', 'bot': 'bottles',
-        'packet': 'packets', 'packets': 'packets', 'pack': 'packets', 'pkt': 'packets',
-        'box': 'boxes', 'boxes': 'boxes', 'bx': 'boxes',
-        'dozen': 'dozen', 'doz': 'dozen', 'dz': 'dozen',
-        'unit': 'units', 'units': 'units', 'un': 'units',
-        'carton': 'carton', 'ctn': 'carton', 'crt': 'carton',
-        'bag': 'bags', 'bags': 'bags', 'sack': 'sacks', 'sacks': 'sacks',
-        'can': 'cans', 'cans': 'cans',
-        'jar': 'jars', 'jars': 'jars',
-        'tin': 'tins', 'tins': 'tins',
-        'roll': 'rolls', 'rolls': 'rolls',
-        'meter': 'meters', 'meters': 'meters', 'm': 'meters',
-        'yard': 'yards', 'yards': 'yards', 'yd': 'yards',
+        "kg": "kg",
+        "kgs": "kg",
+        "kilogram": "kg",
+        "kilograms": "kg",
+        "kilo": "kg",
+        "k": "kg",
+        "g": "g",
+        "gm": "g",
+        "gram": "g",
+        "grams": "g",
+        "gr": "g",
+        "l": "l",
+        "ltr": "l",
+        "litre": "l",
+        "litres": "l",
+        "liter": "l",
+        "lt": "l",
+        "ml": "ml",
+        "milliliter": "ml",
+        "millilitre": "ml",
+        "mil": "ml",
+        "pcs": "pcs",
+        "pc": "pcs",
+        "piece": "pcs",
+        "pieces": "pcs",
+        "p": "pcs",
+        "bottle": "bottles",
+        "bottles": "bottles",
+        "btl": "bottles",
+        "bot": "bottles",
+        "packet": "packets",
+        "packets": "packets",
+        "pack": "packets",
+        "pkt": "packets",
+        "box": "boxes",
+        "boxes": "boxes",
+        "bx": "boxes",
+        "dozen": "dozen",
+        "doz": "dozen",
+        "dz": "dozen",
+        "unit": "units",
+        "units": "units",
+        "un": "units",
+        "carton": "carton",
+        "ctn": "carton",
+        "crt": "carton",
+        "bag": "bags",
+        "bags": "bags",
+        "sack": "sacks",
+        "sacks": "sacks",
+        "can": "cans",
+        "cans": "cans",
+        "jar": "jars",
+        "jars": "jars",
+        "tin": "tins",
+        "tins": "tins",
+        "roll": "rolls",
+        "rolls": "rolls",
+        "meter": "meters",
+        "meters": "meters",
+        "m": "meters",
+        "yard": "yards",
+        "yards": "yards",
+        "yd": "yards",
     }
 
     def __init__(self):
@@ -54,138 +102,160 @@ class InvoiceParser:
         patterns = []
 
         # Define currency patterns
-        currency_symbols = r'(?:Rs\.?|₹|INR|USD|\$|€|£|GBP|EUR|₦|NGN|N|#)'
-        optional_currency = rf'(?:{currency_symbols}\s*)?'
+        currency_symbols = r"(?:Rs\.?|₹|INR|USD|\$|€|£|GBP|EUR|₦|NGN|N|#)"
+        optional_currency = rf"(?:{currency_symbols}\s*)?"
 
         # Pattern 1: "Sugar – Rs. 6,000 (50 kg)" - WITH currency symbol
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[^\d:\-–—@()]+?)\s*[\-–—]\s*'
-                rf'{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s*'
-                rf'\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*\)',
-                re.IGNORECASE
-            ),
-            'priority': 1,
-            'description': 'product - price (quantity unit)'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[^\d:\-–—@()]+?)\s*[\-–—]\s*"
+                    rf"{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s*"
+                    rf"\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*\)",
+                    re.IGNORECASE,
+                ),
+                "priority": 1,
+                "description": "product - price (quantity unit)",
+            }
+        )
 
         # Pattern 1b: "Sugar – 6,000 (50 kg)" - WITHOUT currency symbol
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[^\d:\-–—@()]+?)\s*[\-–—]\s*'
-                rf'(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s*'
-                rf'\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*\)',
-                re.IGNORECASE
-            ),
-            'priority': 1,
-            'description': 'product - price (quantity unit) no currency'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[^\d:\-–—@()]+?)\s*[\-–—]\s*"
+                    rf"(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s*"
+                    rf"\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*\)",
+                    re.IGNORECASE,
+                ),
+                "priority": 1,
+                "description": "product - price (quantity unit) no currency",
+            }
+        )
 
         # Pattern 2: "Wheat Flour (10kg @ 950)" or "Wheat Flour (10kg @ Rs. 950)"
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[^\d:\-–—@()]+?)\s*'
-                rf'\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*'
-                rf'@\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*\)',
-                re.IGNORECASE
-            ),
-            'priority': 1,
-            'description': 'product (quantity unit @ price)'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[^\d:\-–—@()]+?)\s*"
+                    rf"\(\s*(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*"
+                    rf"@\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*\)",
+                    re.IGNORECASE,
+                ),
+                "priority": 1,
+                "description": "product (quantity unit @ price)",
+            }
+        )
 
         # Pattern 3: "Cooking Oil: Qty 5 bottles Price 1200/bottle" or "Price Rs.1200/bottle"
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[^\d:\-–—@()]+?)\s*:\s*'
-                rf'(?:Qty|Quantity)?\s*(?P<quantity>\d+(?:\.\d+)?)?\s*(?P<unit>[a-zA-Z]+)?\s*'
-                rf'(?:Price|Rate|Cost)?\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*/',
-                re.IGNORECASE
-            ),
-            'priority': 1,
-            'description': 'product: qty unit price/unit'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[^\d:\-–—@()]+?)\s*:\s*"
+                    rf"(?:Qty|Quantity)?\s*(?P<quantity>\d+(?:\.\d+)?)?\s*(?P<unit>[a-zA-Z]+)?\s*"
+                    rf"(?:Price|Rate|Cost)?\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*/",
+                    re.IGNORECASE,
+                ),
+                "priority": 1,
+                "description": "product: qty unit price/unit",
+            }
+        )
 
         # Pattern 4: "Rice 25kg Rs.2500" or "Rice 25kg ₹2500" or "Rice 25kg 2500"
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                rf'(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s+'
-                rf'{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)$',
-                re.IGNORECASE
-            ),
-            'priority': 2,
-            'description': 'product quantity unit price'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    rf"(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s+"
+                    rf"{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)$",
+                    re.IGNORECASE,
+                ),
+                "priority": 2,
+                "description": "product quantity unit price",
+            }
+        )
 
         # Pattern 5: "Tomato 10kg @ 45/kg" or "Tomato @ Rs.45/kg" - with optional quantity
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                rf'(?:(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*)?'
-                rf'@\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)(?:/\w+)?$',
-                re.IGNORECASE
-            ),
-            'priority': 2,
-            'description': 'product quantity unit @ price'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    rf"(?:(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s*)?"
+                    rf"@\s*{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)(?:/\w+)?$",
+                    re.IGNORECASE,
+                ),
+                "priority": 2,
+                "description": "product quantity unit @ price",
+            }
+        )
 
         # Pattern 6: "Oil Rs.300/litre" or "Oil 300/litre"
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                rf'{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*/'
-                rf'(?P<unit>[a-zA-Z]+)$',
-                re.IGNORECASE
-            ),
-            'priority': 2,
-            'description': 'product price/unit'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    rf"{optional_currency}\s*(?P<unit_price>[\d,]+(?:\.\d{{1,2}})?)\s*/"
+                    rf"(?P<unit>[a-zA-Z]+)$",
+                    re.IGNORECASE,
+                ),
+                "priority": 2,
+                "description": "product price/unit",
+            }
+        )
 
         # Pattern 7: "Sugar – Rs. 6,000" (no quantity in parentheses)
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s*[\-–—]\s*'
-                rf'{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)$',
-                re.IGNORECASE
-            ),
-            'priority': 3,
-            'description': 'product - price only'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s*[\-–—]\s*"
+                    rf"{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)$",
+                    re.IGNORECASE,
+                ),
+                "priority": 3,
+                "description": "product - price only",
+            }
+        )
 
         # Pattern 8: "Sugar 50kg" (no price)
-        patterns.append({
-            'regex': re.compile(
-                r'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                r'(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)$',
-                re.IGNORECASE
-            ),
-            'priority': 4,
-            'description': 'product quantity unit only'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    r"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    r"(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)$",
+                    re.IGNORECASE,
+                ),
+                "priority": 4,
+                "description": "product quantity unit only",
+            }
+        )
 
         # Pattern 9: "Sugar Rs.6000 50kg" (reversed order)
-        patterns.append({
-            'regex': re.compile(
-                rf'^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                rf'{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s+'
-                rf'(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)$',
-                re.IGNORECASE
-            ),
-            'priority': 2,
-            'description': 'product price quantity unit'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"^(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    rf"{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)\s+"
+                    rf"(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)$",
+                    re.IGNORECASE,
+                ),
+                "priority": 2,
+                "description": "product price quantity unit",
+            }
+        )
 
         # Pattern 10: Multiple items in one line - "Sugar 50kg Rs.6000, Rice 25kg Rs.2500"
-        patterns.append({
-            'regex': re.compile(
-                rf'(?P<product>[A-Za-z][A-Za-z\s]+?)\s+'
-                rf'(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s+'
-                rf'{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)',
-                re.IGNORECASE
-            ),
-            'priority': 1,
-            'description': 'multi-item pattern'
-        })
+        patterns.append(
+            {
+                "regex": re.compile(
+                    rf"(?P<product>[A-Za-z][A-Za-z\s]+?)\s+"
+                    rf"(?P<quantity>\d+(?:\.\d+)?)\s*(?P<unit>[a-zA-Z]+)\s+"
+                    rf"{optional_currency}\s*(?P<total>[\d,]+(?:\.\d{{1,2}})?)",
+                    re.IGNORECASE,
+                ),
+                "priority": 1,
+                "description": "multi-item pattern",
+            }
+        )
 
         return patterns
 
@@ -198,17 +268,22 @@ class InvoiceParser:
             # Remove currency symbols, commas, and whitespace
             cleaned = str(value).strip()
             # Remove currency symbols
-            cleaned = re.sub(r'^(?:Rs\.?|₹|INR|USD|\$|€|£|GBP|EUR|₦|NGN|N|#)\s*', '', cleaned, flags=re.IGNORECASE)
+            cleaned = re.sub(
+                r"^(?:Rs\.?|₹|INR|USD|\$|€|£|GBP|EUR|₦|NGN|N|#)\s*",
+                "",
+                cleaned,
+                flags=re.IGNORECASE,
+            )
             # Remove commas (thousands separators)
-            cleaned = cleaned.replace(',', '')
+            cleaned = cleaned.replace(",", "")
             # Remove any remaining non-numeric characters except decimal point
-            cleaned = re.sub(r'[^\d\.]', '', cleaned)
+            cleaned = re.sub(r"[^\d\.]", "", cleaned)
 
             # Handle cases where there might be multiple decimal points
-            parts = cleaned.split('.')
+            parts = cleaned.split(".")
             if len(parts) > 2:
                 # Keep only first decimal point (e.g., "1.234.56" -> "1234.56")
-                cleaned = parts[0] + '.' + ''.join(parts[1:])
+                cleaned = parts[0] + "." + "".join(parts[1:])
 
             if not cleaned:
                 return None
@@ -239,12 +314,12 @@ class InvoiceParser:
 
         # Skip obvious noise
         noise_patterns = [
-            r'^.*invoice.*#?\d+.*$',
-            r'^.*traders?.*$',
-            r'^.*thank.*you.*$',
-            r'^.*total.*:.*$',
-            r'^.*tax.*:.*$',
-            r'^\s*\d+\s*$',  # Just numbers
+            r"^.*invoice.*#?\d+.*$",
+            r"^.*traders?.*$",
+            r"^.*thank.*you.*$",
+            r"^.*total.*:.*$",
+            r"^.*tax.*:.*$",
+            r"^\s*\d+\s*$",  # Just numbers
         ]
 
         for pattern in noise_patterns:
@@ -255,7 +330,7 @@ class InvoiceParser:
         best_score = -1
 
         for pattern_info in self.patterns:
-            match = pattern_info['regex'].match(line)
+            match = pattern_info["regex"].match(line)
             if not match:
                 continue
 
@@ -263,27 +338,27 @@ class InvoiceParser:
             item = ParsedItem(raw_text=line)
 
             # Extract basic fields
-            if 'product' in groups and groups['product']:
-                item.product_name = groups['product'].strip()
+            if "product" in groups and groups["product"]:
+                item.product_name = groups["product"].strip()
 
-            if 'quantity' in groups and groups['quantity']:
-                item.quantity = self._clean_number(groups['quantity'])
+            if "quantity" in groups and groups["quantity"]:
+                item.quantity = self._clean_number(groups["quantity"])
 
-            if 'unit' in groups and groups['unit']:
-                item.unit = self._normalize_unit(groups['unit'])
+            if "unit" in groups and groups["unit"]:
+                item.unit = self._normalize_unit(groups["unit"])
 
             # Extract prices
-            if 'unit_price' in groups and groups['unit_price']:
-                item.unit_price = self._clean_number(groups['unit_price'])
+            if "unit_price" in groups and groups["unit_price"]:
+                item.unit_price = self._clean_number(groups["unit_price"])
 
-            if 'total' in groups and groups['total']:
-                item.total_price = self._clean_number(groups['total'])
+            if "total" in groups and groups["total"]:
+                item.total_price = self._clean_number(groups["total"])
 
             # Calculate missing values
             self._calculate_missing(item)
 
             # Calculate confidence
-            confidence = self._calculate_confidence(item, pattern_info['priority'])
+            confidence = self._calculate_confidence(item, pattern_info["priority"])
             item.confidence = confidence
 
             if confidence > best_score:
@@ -294,9 +369,19 @@ class InvoiceParser:
 
     def _calculate_missing(self, item: ParsedItem) -> None:
         """Calculate missing price values."""
-        if item.total_price and item.quantity and item.quantity > 0 and not item.unit_price:
+        if (
+            item.total_price
+            and item.quantity
+            and item.quantity > 0
+            and not item.unit_price
+        ):
             item.unit_price = round(item.total_price / item.quantity, 2)
-        elif item.unit_price and item.quantity and item.quantity > 0 and not item.total_price:
+        elif (
+            item.unit_price
+            and item.quantity
+            and item.quantity > 0
+            and not item.total_price
+        ):
             item.total_price = round(item.unit_price * item.quantity, 2)
 
     def _calculate_confidence(self, item: ParsedItem, pattern_priority: int) -> float:
@@ -335,10 +420,10 @@ class InvoiceParser:
             return []
 
         # Normalize line endings
-        text = text.replace('\r\n', '\n').replace('\r', '\n')
+        text = text.replace("\r\n", "\n").replace("\r", "\n")
 
         # Split into lines and process
-        lines = text.split('\n')
+        lines = text.split("\n")
         items = []
 
         for line in lines:

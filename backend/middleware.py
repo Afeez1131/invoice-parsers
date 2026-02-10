@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import HTTPException, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 
 
@@ -14,11 +14,11 @@ class RequestSizeLimitMiddleware(BaseHTTPMiddleware):
             if content_length:
                 try:
                     size = int(content_length)
-                    print(f'Content-Length: {size} bytes')
+                    print(f"Content-Length: {size} bytes")
                     if size > self.max_body_size:
                         raise HTTPException(
                             status_code=413,  # Payload Too Large
-                            detail=f"Request body too large. Maximum allowed: {self.max_body_size // (1024 * 1024)} MB"
+                            detail=f"Request body too large. Maximum allowed: {self.max_body_size // (1024 * 1024)} MB",
                         )
                 except ValueError:
                     raise HTTPException(400, "Invalid Content-Length header")

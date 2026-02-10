@@ -1,23 +1,15 @@
-import json
-from typing import List, Optional, Union
-from fastapi import FastAPI, HTTPException, Depends, Request
+import logging
+from datetime import datetime
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from fastapi.encoders import jsonable_encoder
-from pydantic import BaseModel, Field, validator, field_validator, model_validator
-import re
-from datetime import datetime
-from functools import lru_cache
-import logging
-import base64
+from slowapi.errors import RateLimitExceeded
 
 from middleware import RequestSizeLimitMiddleware
-from schemas import ErrorResponse
-from parser import InvoiceParser
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
 from router import router as parser_router
+from schemas import ErrorResponse
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -27,7 +19,7 @@ MAX_PAYLOAD_SIZE = 5  # IN MB
 app = FastAPI(
     title="Invoice Parser API",
     description="API for parsing unstructured invoice text",
-    version="1.0.0"
+    version="1.0.0",
 )
 
 # Add CORS middleware
@@ -49,7 +41,7 @@ async def health_check():
     return {
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
-        "service": "invoice-parser"
+        "service": "invoice-parser",
     }
 
 
@@ -63,8 +55,8 @@ async def root():
             "/parse": "POST - Parse invoice text",
             "/parse/raw": "POST - Parse with raw JSON input",
             "/health": "GET - Health check",
-            "/docs": "API documentation"
-        }
+            "/docs": "API documentation",
+        },
     }
 
 
@@ -87,10 +79,9 @@ async def custom_rate_limit_handler(request, exc):
 async def http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content=jsonable_encoder(ErrorResponse(
-            error=exc.detail,
-            timestamp=datetime.now().isoformat()
-        ))
+        content=jsonable_encoder(
+            ErrorResponse(error=exc.detail, timestamp=datetime.now().isoformat())
+        ),
     )
 
 
@@ -99,9 +90,11 @@ async def general_exception_handler(request: Request, exc: Exception):
     logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
     return JSONResponse(
         status_code=500,
-        content=jsonable_encoder(ErrorResponse(
-            error="Internal server error",
-            detail=str(exc),
-            timestamp=datetime.now().isoformat()
-        ))
+        content=jsonable_encoder(
+            ErrorResponse(
+                error="Internal server error",
+                detail=str(exc),
+                timestamp=datetime.now().isoformat(),
+            )
+        ),
     )
